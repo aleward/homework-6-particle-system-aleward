@@ -1,8 +1,9 @@
-import * as CameraControls from '3d-view-controls';
+import * as CameraControls from '../node_modules/3d-view-controls';
 import {vec3, mat4} from 'gl-matrix';
 
 class Camera {
   controls: any;
+  tempCont: any;
   projectionMatrix: mat4 = mat4.create();
   viewMatrix: mat4 = mat4.create();
   fovy: number = 45;
@@ -20,9 +21,11 @@ class Camera {
     const canvas = <HTMLCanvasElement> document.getElementById('canvas');
 
     this.controls = CameraControls(canvas, {
-      position: position,
+      eye: position,
       center: target,
     });
+
+    this.controls.view.setUse(true);
 
     vec3.add(this.target, this.position, this.direction);
     mat4.lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
