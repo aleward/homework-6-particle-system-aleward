@@ -21,7 +21,7 @@ Camera Mode allows you to move your view, while Particle Motion Mode allows you 
 
 ![](pic2.png)
 
-### ... and the right to repel.
+### ... and the right click to repel.
 
 ![](pic3.png)
 
