@@ -3324,39 +3324,81 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-    tesselations: 5,
-    'Mouse Controls': 'Camera',
-    'Load Scene': loadScene,
+    'Mouse Controls': 'Particle Motion',
+    'Shapes': 'None'
 };
 let square;
 let time = 0.0;
 let particles = [];
+let meshes = [];
+let mods = [];
 let heart;
+let popplio;
+let wahoo;
+let cow;
+let greenWahoo;
+let rose;
+let sunflower;
+let apple;
 function loadScene() {
     square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
     square.create();
-    heart = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('heart.obj');
-    // Set up particles here. Hard-coded example data for now
+    // PARTICLES
     let offsetsArray = [];
     let colorsArray = [];
+    // number of particles in each axis direction:
     let n = 25.0;
-    let hFreq = Math.floor((n * n * n) / heart.pos.length);
+    // Setting up the mesh values
+    heart = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('heart.obj', 10);
+    popplio = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('popplio.obj', 10);
+    wahoo = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('wahoo.obj', 10);
+    greenWahoo = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('greenWahoo.obj', 10);
+    cow = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('cow.obj', 8);
+    rose = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('rose.obj', 1);
+    sunflower = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('sunflower.obj', 0.7);
+    apple = new __WEBPACK_IMPORTED_MODULE_5__Shape__["a" /* Shape */]('apple.obj', 10);
+    meshes.push(heart);
+    meshes.push(popplio);
+    meshes.push(wahoo);
+    meshes.push(cow);
+    meshes.push(greenWahoo);
+    meshes.push(rose);
+    meshes.push(sunflower);
+    meshes.push(apple);
+    // Values that track which meshes effect which particles
+    for (let i = 0; i < meshes.length; i++) {
+        mods.push(Math.max(1, Math.floor((n * n * n) / meshes[i].pos.length)));
+    }
     let count = 0;
-    for (let i = -1.5 * n; i < 1.5 * n; i += 3) {
-        for (let j = -1.5 * n; j < 1.5 * n; j += 3) {
-            for (let k = -1.5 * n; k < 1.5 * n; k += 3) {
+    // Set up particles here.
+    for (let i = 3 * n; i > -3 * n; i -= 6) {
+        for (let j = -3 * n; j < 3 * n; j += 6) {
+            for (let k = -3 * n; k < 3 * n; k += 6) {
                 let particle = new __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(i, j, k));
+                // The particle locations
                 offsetsArray.push(i);
                 offsetsArray.push(j);
                 offsetsArray.push(k);
+                // The particle colors
                 colorsArray.push(particle.r / 255);
                 colorsArray.push(particle.g / 255);
                 colorsArray.push(particle.b / 255);
                 colorsArray.push(1.0); // Alpha channel
-                if (count % hFreq == 0 && Math.floor(count / hFreq) < heart.pos.length) {
-                    particle.isMesh = true;
-                    particle.meshPos = heart.pos[Math.floor(count / hFreq)];
-                    console.log("s");
+                // The meshes
+                for (let i = 0; i < meshes.length; i++) {
+                    if (count % mods[i] == 0 && Math.floor(count / mods[i]) < meshes[i].pos.length) {
+                        particle.isMesh[i] = true;
+                        particle.meshPos[i] = meshes[i].pos[Math.floor(count / mods[i])];
+                    }
+                    else {
+                        if (mods[i] == 1) {
+                            particle.isMesh[i] = true;
+                            particle.meshPos[i] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
+                        }
+                        else {
+                            particle.isMesh[i] = false;
+                        }
+                    }
                 }
                 particles.push(particle);
                 count++;
@@ -3368,6 +3410,7 @@ function loadScene() {
     square.setInstanceVBOs(offsets, colors);
     square.setNumInstances(n * n * n); // 10x10 grid of "particles"
 }
+// Function to update the particle VBO data
 function squareVBOUpdate() {
     let offsetsArray = [];
     let colorsArray = [];
@@ -3394,7 +3437,9 @@ function main() {
     document.body.appendChild(stats.domElement);
     // Add controls to the gui
     const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
-    var mouseFolder = gui.add(controls, 'Mouse Controls', ['Camera', 'Particle Motion']);
+    var mouseOps = gui.add(controls, 'Mouse Controls', ['Camera', 'Particle Motion']);
+    var shapeOps = gui.add(controls, 'Shapes', ['None', 'Heart', 'Apple', 'Rose',
+        'Sunflower', 'Popplio', 'Wahoo', 'Green Wahoo']);
     // get canvas and webgl context
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl2');
@@ -3406,78 +3451,117 @@ function main() {
     Object(__WEBPACK_IMPORTED_MODULE_8__globals__["b" /* setGL */])(gl);
     // Initial call to load scene
     loadScene();
-    const camera = new __WEBPACK_IMPORTED_MODULE_7__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(40, 30, 10), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(5, 5, 0));
+    const camera = new __WEBPACK_IMPORTED_MODULE_7__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(-100, 10, 10), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(5, 5, 0));
     const renderer = new __WEBPACK_IMPORTED_MODULE_6__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
-    renderer.setClearColor(0.2, 0.2, 0.2, 1);
+    renderer.setClearColor(0, 0, 0, 1);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
     const lambert = new __WEBPACK_IMPORTED_MODULE_9__rendering_gl_ShaderProgram__["b" /* default */]([
         new __WEBPACK_IMPORTED_MODULE_9__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(70)),
         new __WEBPACK_IMPORTED_MODULE_9__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(71)),
     ]);
+    // Takes the location of the mouse on the screen and adjusts it for world interaction
+    function xyAdjust(event) {
+        let x = event.clientX;
+        let y = event.clientY;
+        x = x - window.innerWidth / 2;
+        y = (y - window.innerHeight / 2) * -1;
+        x /= window.innerHeight * 0.9;
+        y /= window.innerHeight * 0.9;
+        x *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
+        y *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
+        return __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(x * camera.right[0] + y * camera.up[0], x * camera.right[1] + y * camera.up[1], x * camera.right[2] + y * camera.up[2]);
+    }
+    // The method to halt camera movement and allow for mouse-particle interaction
+    function mouseControl() {
+        camera.controls.view.setUse(false);
+        // clicked
+        canvas.onmousedown = function (event) {
+            // Mouse position:
+            let clickPos = xyAdjust(event);
+            // Left click
+            if (event.button == 0) {
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick = true;
+            }
+            // Right click
+            if (event.button == 2) {
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseVec = camera.position;
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick = true;
+            }
+        };
+        // held
+        canvas.onmousemove = function (event) {
+            if (__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick || __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick) {
+                // Mouse position:
+                let clickPos = xyAdjust(event);
+                // Update values
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
+                if (__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick) {
+                    __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseVec = camera.position;
+                }
+            }
+        };
+        // unclicked
+        canvas.onmouseup = function (event) {
+            if (event.button == 0) {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick = false;
+            }
+            if (event.button == 2) {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick = false;
+            }
+        };
+    }
+    mouseControl(); // first time
     let time = 0;
-    let mouseEffect = false;
     // This function will be called every frame
     function tick() {
-        mouseFolder.onChange(function (value) {
+        // SHAPE OPTIONS
+        shapeOps.onChange(function (value) {
+            if (value == 'None') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = -1;
+            }
+            else if (value == 'Heart') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 0;
+            }
+            else if (value == 'Popplio') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 1;
+            }
+            else if (value == 'Wahoo') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 2;
+            }
+            else if (value == 'Cow') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 3;
+            }
+            else if (value == 'Green Wahoo') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 4;
+            }
+            else if (value == 'Rose') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 5;
+            }
+            else if (value == 'Sunflower') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 6;
+            }
+            else if (value == 'Apple') {
+                __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].meshMode = 7;
+            }
+        });
+        // MOUSE OPTIONS
+        mouseOps.onChange(function (value) {
             if (value == 'Camera') {
-                mouseEffect = false;
                 camera.controls.view.setUse(true);
+                // Resets these function values for camera mode
+                canvas.onmousedown = function (event) { };
+                canvas.onmousemove = function (event) { };
+                canvas.onmouseup = function (event) { };
             }
             else {
-                mouseEffect = true;
-                camera.controls.view.setUse(false);
+                // PARTICLE MODE
+                mouseControl();
             }
         });
         camera.update();
-        if (mouseEffect) {
-            canvas.onmousedown = function (event) {
-                let x = event.clientX;
-                let y = event.clientY;
-                x = x - window.innerWidth / 2;
-                y = (y - window.innerHeight / 2) * -1;
-                x /= window.innerHeight;
-                y /= window.innerHeight;
-                x *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
-                y *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
-                let clickPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(x * camera.right[0] + y * camera.up[0], x * camera.right[1] + y * camera.up[1], x * camera.right[2] + y * camera.up[2]);
-                console.log(clickPos);
-                if (event.button == 0) {
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
-                    __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick = true;
-                }
-                if (event.button == 2) {
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseVec, __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.position);
-                    __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick = true;
-                }
-            };
-            canvas.onmousemove = function (event) {
-                if (__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick || __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick) {
-                    let x = event.clientX;
-                    let y = event.clientY;
-                    x = x - window.innerWidth / 2;
-                    y = (y - window.innerHeight / 2) * -1;
-                    x /= window.innerHeight;
-                    y /= window.innerHeight;
-                    x *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
-                    y *= __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(camera.position, camera.target);
-                    let clickPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(x * camera.right[0] + y * camera.up[0], x * camera.right[1] + y * camera.up[1], x * camera.right[2] + y * camera.up[2]);
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.target, clickPos);
-                    if (__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick) {
-                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(__WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseVec, __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].mouseLoc, camera.position);
-                    }
-                }
-            };
-            canvas.onmouseup = function (event) {
-                if (event.button == 0) {
-                    __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].leftClick = false;
-                }
-                if (event.button == 2) {
-                    __WEBPACK_IMPORTED_MODULE_4__geometry_Particle__["a" /* default */].rightClick = false;
-                }
-            };
-        }
         stats.begin();
         lambert.setTime(time++);
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -3486,6 +3570,7 @@ function main() {
             square,
         ]);
         stats.end();
+        // Update all particles
         for (let i = 0; i < particles.length; i++) {
             particles[i].setVals(time);
         }
@@ -12119,74 +12204,95 @@ class Drawable {
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(1);
 
-/*
- *
- *
- */
+/* Alexis Ward
+ * id: aleward
+ * CIS 566 */
 class Particle {
     constructor(pos) {
         // Colors
         this.r = 255;
         this.g = 0;
         this.b = 0;
+        this.isMesh = [];
+        this.meshPos = [];
         this.wasClicked = false;
+        this.changeMesh = false;
         this.pos = pos;
         this.orig = pos;
         this.vel = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.acc = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.offset = Math.random();
+        // increment the color changes more the further the particle is from the center
         for (let i = 0; i < __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].length(pos) * 4; i++) {
             this.colChange();
         }
     }
+    // Called with each tic, updates particle motion (and color)
     setVals(time) {
+        // Makes time cyclic
         let timeVal = Math.sin(0.01 * (time) + this.offset) * 20;
+        // Acts as the change in position over time, based on physics
         let change = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0.01 * timeVal * (this.vel[0] + timeVal * this.acc[0]), 0.01 * timeVal * (this.vel[1] + timeVal * this.acc[1]), 0.01 * timeVal * (this.vel[2] + timeVal * this.acc[2]));
+        // whether to use the final position incrementation
         let skip = false;
+        // Starting assumption of the position, to be changed based on mouse clicks / current meshes
         let clickVal = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.orig[0], this.orig[1], this.orig[2]);
-        if (this.isMesh) {
-            clickVal = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.meshPos[0], this.meshPos[1], this.meshPos[2]);
+        if (Particle.meshMode != -1 && this.isMesh[Particle.meshMode]) {
+            clickVal = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.meshPos[Particle.meshMode][0], this.meshPos[Particle.meshMode][1], this.meshPos[Particle.meshMode][2]);
+            this.changeMesh = true;
         }
+        // PARTICLE ATTRACTION
         if (Particle.leftClick) {
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(clickVal, Particle.mouseLoc, this.pos);
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(clickVal, clickVal);
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(clickVal, this.pos, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0], clickVal[1], clickVal[2]));
             this.wasClicked = true;
+            // PARTICLE REPULSION
         }
         else if (Particle.rightClick) {
+            // Where the particle should be at this time
             let v = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0] + change[0], clickVal[1] + change[1], clickVal[2] + change[2]);
+            // RAY TRACES A PATH THROUGH THE PARTICLES TO REPEL FROM:
+            // The ray direction
             let increment = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(increment, Particle.mouseLoc, Particle.mouseVec);
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(increment, increment);
-            increment = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(increment[0] * 18, increment[1] * 18, increment[2] * 18);
+            increment = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(increment[0] * 36, increment[1] * 36, increment[2] * 36);
+            // Define whether this particle needs to be repelled and where from
             let isect1 = false;
             let isect2 = false;
             let iPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
+            // The starting ray position:
             let r = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(Particle.mouseVec[0], Particle.mouseVec[1], Particle.mouseVec[2]);
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(r, r);
             r = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(r[0] * 70, r[1] * 70, r[2] * 70);
-            for (let ray = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(r[0], r[1], r[2]); __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(ray, r) < 130; __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(ray, ray, increment)) {
-                if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(v, ray) < 10) {
+            // Trace
+            for (let ray = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(r[0], r[1], r[2]); __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(ray, r) < 260; __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(ray, ray, increment)) {
+                if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(v, ray) < 20) {
                     isect1 = true;
                     iPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(ray[0], ray[1], ray[2]);
                 }
-                if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, ray) < 10) {
+                if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, ray) < 20) {
                     isect2 = true;
                 }
             }
+            // If both the expected position and the current position are in the repelling zone, repel
             if (isect1 && isect2) {
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(clickVal, this.pos, iPos);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(clickVal, clickVal);
-                this.pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.orig[0] + 0.01 * time * clickVal[0], this.orig[1] + 0.01 * time * clickVal[1], this.orig[2] + 0.01 * time * clickVal[2]);
+                let move = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.pos[0] - iPos[0], this.pos[1] - iPos[1], this.pos[2] - iPos[2]);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(move, move);
+                // Sets the position here, and skips the following position definition
+                this.pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0] + 0.01 * time * move[0], clickVal[1] + 0.01 * time * move[1], clickVal[2] + 0.01 * time * move[2]);
                 skip = true;
+                // If the particle has been properly repelled, keep it away
             }
             else if (isect1) {
                 clickVal = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.pos[0], this.pos[1], this.pos[2]);
             }
             this.wasClicked = true;
         }
-        let returnPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(returnPos, returnPos, this.orig);
+        // DEFINE FINAL POSITIONS
+        let returnPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.orig[0], this.orig[1], this.orig[2]);
+        // Brings the particles back to their initial positions if need be
         if (!Particle.leftClick &&
             this.wasClicked && __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, returnPos) > 5) {
             __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(clickVal, returnPos, this.pos);
@@ -12196,6 +12302,20 @@ class Particle {
             if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, returnPos) <= 5) {
                 this.wasClicked = false;
             }
+            // A check for mesh shifts
+        }
+        else if (this.changeMesh) {
+            let v = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0] + change[0], clickVal[1] + change[1], clickVal[2] + change[2]);
+            if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, v) >= 1) {
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(clickVal, v, this.pos);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(clickVal, clickVal);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(clickVal, this.pos, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0], clickVal[1], clickVal[2]));
+                this.pos = clickVal;
+                if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, v) < 1) {
+                    this.changeMesh = false;
+                }
+            }
+            // Log position
         }
         else {
             if (!skip) {
@@ -12204,6 +12324,7 @@ class Particle {
         }
         this.colChange();
     }
+    // Causes the rainbow shift in colors!
     colChange() {
         // RGB Color fade Algorithm by Codepixl
         if (this.r > 0 && this.b == 0) {
@@ -12220,10 +12341,13 @@ class Particle {
         }
     }
 }
+// Mesh attributes
+Particle.meshMode = -1;
+// Mouse values
 Particle.leftClick = false;
 Particle.rightClick = false;
-Particle.mouseLoc = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(5, 5, 0);
-Particle.mouseVec = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
+Particle.mouseLoc = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(5, 5, 0); // worldspace centered location
+Particle.mouseVec = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0); // worldspace mouse location
 /* harmony default export */ __webpack_exports__["a"] = (Particle);
 
 
@@ -12234,11 +12358,14 @@ Particle.mouseVec = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].from
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(1);
 
-// Uses WebGL to load objs for each needed shape
+/* Alexis Ward
+ * id: aleward
+ * CIS 566
+ *
+ * Uses WebGL to load objs for each needed shape
+ */
 class Shape {
-    //norms: number[] = [];
-    //idx: number[] = [];
-    constructor(file) {
+    constructor(file, scale) {
         // Values for the future VBO
         this.pos = [];
         // Reads the obj from index.html
@@ -12247,10 +12374,8 @@ class Shape {
         this.mesh = new OBJload.Mesh(this.obj);
         // The read in values:
         for (let i = 0; i < this.mesh.vertices.length; i += 3) {
-            this.pos.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.mesh.vertices[i] * 10, this.mesh.vertices[i + 1] * 10, this.mesh.vertices[i + 2] * 10));
+            this.pos.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.mesh.vertices[i] * scale, this.mesh.vertices[i + 1] * scale, this.mesh.vertices[i + 2] * scale));
         }
-        //this.norms = this.mesh.vertexNormals;
-        //this.idx = this.mesh.indices;
     }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Shape;
@@ -12332,6 +12457,8 @@ class Camera {
         this.right = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
         this.forward = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
         const canvas = document.getElementById('canvas');
+        /* I altered "position" to be "eye" and added a "use" variable in the camera.js and view.js
+         * files to check whether to move the camera */
         this.controls = __WEBPACK_IMPORTED_MODULE_0__node_modules_3d_view_controls__(canvas, {
             eye: position,
             center: target,
