@@ -149,7 +149,7 @@ class Particle {
                 this.wasClicked = false;
             }
         // A check for mesh shifts
-        } else if (this.changeMesh) {
+        } else if (this.changeMesh && !this.wasClicked) {
             let v = vec3.fromValues(clickVal[0] + change[0], 
                                     clickVal[1] + change[1], 
                                     clickVal[2] + change[2]);

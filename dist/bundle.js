@@ -12304,7 +12304,7 @@ class Particle {
             }
             // A check for mesh shifts
         }
-        else if (this.changeMesh) {
+        else if (this.changeMesh && !this.wasClicked) {
             let v = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(clickVal[0] + change[0], clickVal[1] + change[1], clickVal[2] + change[2]);
             if (__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].dist(this.pos, v) >= 1) {
                 __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].subtract(clickVal, v, this.pos);
